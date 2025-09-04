@@ -10,7 +10,7 @@ std::string getName();
 struct Player {
     std::string name;
     int score = 0;
-    std::vector<int> cards; // Placeholder for cards
+    std::vector<std::string> cards; // <--- change from int to string
 };
 
 // Deck class
@@ -48,12 +48,14 @@ public:
     }
 
     bool removeCard(const std::string& card) {
-        if (cards[card] > 0) {
-            cards[card]--;
-            return true;
+        auto it = cards.find(card);       // search for the card
+        if (it != cards.end() && it->second > 0) {
+            it->second--;                // decrement count
+            return true;                 // card successfully removed
         }
-        return false;
+        return false;                     // card not available
     }
+
 
     int getCount(const std::string& card) const {
         auto it = cards.find(card);
@@ -65,7 +67,53 @@ public:
             std::cout << card << ": " << count << std::endl;
         }
     }
+
+    // getter to access the internal map for probability calculation
+    const std::map<std::string, int>& getCardsMap() const {
+        return cards;
+    }
 };
+
+// Function to calculate probability of failure for a given player
+double probabilityOfFailure(const Player& player, const Deck& deck) {
+    int failureCount = 0;
+    int totalRemaining = 0;
+
+    // Count total cards remaining in the deck
+    for (const auto& [card, count] : deck.getCardsMap()) {
+        totalRemaining += count;
+    }
+
+    // Count cards that the player already has (number cards 0-12)
+    for (const auto& c : player.cards) {
+        try {
+            int cardNum = std::stoi(c);  // convert string to integer
+            if (cardNum >= 0 && cardNum <= 12) {
+                failureCount += deck.getCount(c);
+            }
+        } catch (...) {
+            // ignore non-number cards (special cards)
+        }
+    }
+
+    if (totalRemaining == 0) return 0.0; // avoid division by zero
+    return double(failureCount) / totalRemaining;
+}
+
+void updateScores(std::vector<Player>& players) {
+    for (auto& player : players) {
+        int total = 0;
+        for (const auto& c : player.cards) {
+            try {
+                int val = std::stoi(c); // only number cards contribute
+                total += val;
+            } catch (...) {
+                // ignore non-number cards for now
+            }
+        }
+        player.score = total;
+    }
+}
 
 // ------------------- main -------------------
 int main() {
@@ -92,11 +140,77 @@ int main() {
         std::cout << player.name << std::endl;
     }
 
-    // Optional: print the starting deck
-    // deck.printDeck();
+    std::cout << "\nStart dealing cards manually via commands!\n";
+
+    while (true) {
+        std::string command;
+        std::cout << "\nEnter a command (turn, scores, hands, deck, quit): ";
+        std::getline(std::cin, command);
+
+        if (command == "quit") {
+            std::cout << "Exiting Flip 7 Helper.\n";
+            break;
+        }
+        else if (command == "turn") {
+            std::cout << "\n--- New Turn ---\n";
+            for (auto& player : players) {
+                // Show probability for this player BEFORE drawing
+                double prob = probabilityOfFailure(player, deck);
+                std::cout << player.name << ", probability of failure this turn: "
+                        << prob * 100 << "%\n";
+
+                // Suggest hit or stay
+                if (prob >= 0.4) {
+                    std::cout << "Suggestion: STAY this turn.\n";
+                } else {
+                    std::cout << "Suggestion: HIT this turn.\n";
+                }
+
+                std::string card;
+                bool valid = false;
+                while (!valid) {
+                    std::cout << player.name << ", enter the card you were dealt: ";
+                    std::getline(std::cin, card);
+
+                    if (deck.removeCard(card)) {
+                        player.cards.push_back(card);
+                        std::cout << card << " added to " << player.name << "'s hand.\n\n";
+                        valid = true;
+                    } else {
+                        std::cout << "\nInvalid card or card not available. Please try again.\n\n";
+                    }
+                }
+            }
+            updateScores(players);
+        }
+        else if (command == "scores") {
+            std::cout << "\nCurrent scores:\n";
+            for (const auto& player : players) {
+                std::cout << player.name << ": " << player.score << std::endl;
+            }
+        }
+        else if (command == "hands") {
+            std::cout << "\nPlayers' hands:\n";
+            for (const auto& player : players) {
+                std::cout << player.name << ": ";
+                for (const auto& c : player.cards) {
+                    std::cout << c << " ";
+                }
+                std::cout << std::endl;
+            }
+        }
+        else if (command == "deck") {
+            std::cout << "\nRemaining deck:\n";
+            deck.printDeck();
+        }
+        else {
+            std::cout << "Unknown command. Try again.\n";
+        }
+    }
 
     return 0;
 }
+
 
 // Function to prompt user for their name and return it
 std::string getName() {
