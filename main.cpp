@@ -126,7 +126,7 @@ int main() {
 
     std::string command;
     while (true) {
-        std::cout << "\nCommands:\n- round : start a new round\n- scores : show current scores\n- deck : show current deck\n- exit : quit program\n"; /*- hands : show each players current hand\n*/
+        std::cout << "\nCommands:\n- round : start a new round\n- scores : show current scores\n- deck : show current deck\n- bonus : give someone a flip seven bonus\n- exit : quit program\n"; /*- hands : show each players current hand\n*/
         std::cout << "\nEnter command: ";
         std::getline(std::cin, command);
     
@@ -296,6 +296,20 @@ int main() {
             }
 
         }
+        else if (command == "bonus") {
+            std::string playerName;
+            std::cout << "Enter the player's name to give 15 bonus points: ";
+            std::getline(std::cin, playerName);
+
+            Player* p = findPlayer(players, playerName);
+            if (p) {
+                p->score += 15;
+                std::cout << p->name << " received +15 bonus points! Total score: " << p->score << "\n";
+            } else {
+                std::cout << "Player not found.\n";
+            }
+        }
+
         else {
             std::cout << "Unknown command.\n";
         }
