@@ -31,15 +31,15 @@ public:
         cards["8"] = 8; cards["9"] = 9; cards["10"] = 10; cards["11"] = 11; cards["12"] = 12;
 
         // Special cards
-        cards["Freeze"] = 3;
-        cards["Flip Three"] = 3;
-        cards["Second Chance"] = 3;
-        cards["Score x2"] = 1;
-        cards["Score +2"] = 1;
-        cards["Score +4"] = 1;
-        cards["Score +6"] = 1;
-        cards["Score +8"] = 1;
-        cards["Score +10"] = 1;
+        cards["freeze"] = 3;
+        cards["flip three"] = 3;
+        cards["second chance"] = 3;
+        cards["double"] = 1;
+        cards["plus 2"] = 1;
+        cards["plus 4"] = 1;
+        cards["plus 6"] = 1;
+        cards["plus 8"] = 1;
+        cards["plus 10"] = 1;
     }
 
     bool removeCard(const std::string& card) {
@@ -89,15 +89,45 @@ void updateRoundScores(std::vector<Player>& players) {
             continue;
         }
 
-        int total = 0;
+        int baseScore = 0;
+        bool hasDouble = false;
+        int plusBonus = 0;
+
         for (const auto& c : player.cards) {
             try {
-                total += std::stoi(c); // only numeric cards
-            } catch (...) {}
+                // numeric cards ("0" to "12")
+                baseScore += std::stoi(c);
+            } catch (...) {
+                // handle special score cards
+                if (c == "double") {
+                    hasDouble = true;
+                }
+                else if (c == "plus 2") {
+                    plusBonus += 2;
+                }
+                else if (c == "plus 4") {
+                    plusBonus += 4;
+                }
+                else if (c == "plus 6") {
+                    plusBonus += 6;
+                }
+                else if (c == "plus 8") {
+                    plusBonus += 8;
+                }
+                else if (c == "plus 10") {
+                    plusBonus += 10;
+                }
+            }
         }
-        player.roundScore = total;
+
+        if (hasDouble) {
+            baseScore *= 2;
+        }
+
+        player.roundScore = baseScore + plusBonus;
     }
 }
+
 
 
 // Find player by name (helper)
@@ -191,7 +221,7 @@ int main() {
                         } 
                         else if (deck.removeCard(card)) {
                             // === Handle special cards ===
-                            if (card == "Freeze") {
+                            if (card == "freeze") {
                                 std::string target;
                                 std::cout << "Choose a player to freeze: ";
                                 std::getline(std::cin, target);
@@ -201,7 +231,7 @@ int main() {
                                     std::cout << t->name << " is frozen!\n";
                                 }
                             }
-                            else if (card == "Flip Three") {
+                            else if (card == "flip three") {
                                 std::string target;
                                 std::cout << "Choose a player to draw three cards: ";
                                 std::getline(std::cin, target);
@@ -227,9 +257,9 @@ int main() {
                                                     } else {
                                                         t->cards.push_back(extraCard);
                                                     }
-                                                } else if (extraCard == "Second Chance") {
+                                                } else if (extraCard == "second chance") {
                                                     t->secondChanceCount++;
-                                                } else if (extraCard == "Freeze" || extraCard == "Flip Three") {
+                                                } else if (extraCard == "freeze" || extraCard == "flip three") {
                                                     std::cout << "Special card drawn during Flip Three ignored for simplicity.\n";
                                                 }
                                                 validExtra = true;
@@ -240,7 +270,7 @@ int main() {
                                     }
                                 }
                             }
-                            else if (card == "Second Chance") {
+                            else if (card == "second chance") {
                                 player.secondChanceCount++;
                                 if (player.secondChanceCount > 1) {
                                     std::string giveTo;
